@@ -1,73 +1,39 @@
-# UptimeGo
+#  UptimeGo
 
-Lightweight Go-based uptime monitoring CLI + daemon.  
-Checks HTTP endpoints, exposes Prometheus metrics, and sends free alerts (Discord/Telegram).  
-Simple, reliable, cloud-native observability tool.
+[![Go Version](https://img.shields.io/github/go-mod/go-version/tonusername/uptimego)](https://golang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features (MVP en cours)
+**UptimeGo** is a lightweight, high-performance uptime monitoring CLI and daemon built with Go. It monitors your HTTP endpoints, exposes real-time Prometheus metrics, and sends instant alerts to Discord or Telegram when things go south.
 
-- CLI intuitive (Cobra) : add/list/remove endpoints, start/stop daemon, status
-- Periodic HTTP health checks (concurrent goroutines)
-- Prometheus metrics endpoint (`/metrics`) : up/down gauge, latency histogram, counters
-- Instant alerting via Discord webhook (ou Telegram/email en fallback)
-- Configurable via YAML/TOML
-- Graceful shutdown & retries with backoff
-- Docker-ready
+Built with a "cloud-native first" mindset, it's perfect for developers who want a simple, self-hosted observability tool without the bloat.
 
-## Quick Start
+---
+
+##  Features (MVP in Progress)
+
+- ** Intuitive CLI**: Built with [Cobra](https://github.com/spf13/cobra) for seamless management (`start`, `stop`, `status`, `list`).
+- ** Concurrent Monitoring**: Checks multiple endpoints simultaneously using Go's powerful goroutines.
+- ** Observability**: Native Prometheus metrics endpoint (`/metrics`) including:
+  - Up/Down status gauges.
+  - Response latency histograms.
+  - Failure counters.
+- ** Instant Alerting**: Discord Webhook support (Telegram & Email fallback coming soon).
+- ** Flexible Config**: Easily manageable via `YAML` or `TOML`.
+- ** Resilience**: Graceful shutdowns and automatic retries with backoff strategies.
+- ** Docker Ready**: Containerized for easy deployment alongside your stack.
+
+---
+
+##  Quick Start
 
 ### Prerequisites
-- Go 1.22+
-- Docker (optionnel pour démo Prometheus/Grafana)
 
-### Installation (dev mode)
+- **Go** 1.22+
+- **Docker** (Optional, for Prometheus/Grafana demo)
 
-```bash
-git clone https://github.com/tonusername/uptimego.git
-cd uptimego
-go mod tidy
+### Installation
 
-Build & Run
-Bash# Build the CLI
-go build -o uptimego ./cmd/uptimego
-
-# Create a basic config (see config.yaml.example)
-cp config.yaml.example config.yaml
-
-# Start monitoring
-./uptimego start
-Ou avec Docker (à venir) :
-Bashdocker compose up
-Configuration Example (config.yaml)
-YAMLport: 8080
-endpoints:
-  - name: "My API Prod"
-    url: "https://api.example.com/health"
-    interval: 30s
-    timeout: 5s
-    down_threshold: 3
-    alert:
-      discord_webhook: "https://discord.com/api/webhooks/..."
-Roadmap
-
- Project bootstrap & Cobra CLI
- Basic HTTP checker + concurrency
- Prometheus metrics instrumentation
- Alerting (Discord webhook)
- Docker + docker-compose with Prometheus/Grafana
- Tests & better README with screenshots
-
-Why this project?
-Built as a learning/portfolio project to demonstrate:
-
-Go concurrency & error handling
-Observability (Prometheus)
-CLI tools in Go
-Self-hosted monitoring basics
-
-Perfect for junior backend/infra/cloud roles.
-License
-MIT License – see LICENSE
-
-Made with ❤️ in Antananarivo, Madagascar
-Questions or ideas? Open an issue!
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Arnel-rah/uptimego.git
+   cd uptimego
