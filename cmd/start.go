@@ -1,40 +1,49 @@
 /*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-
+Copyright © 2026 raharinandrasana <ton@email.com>  // ← Mets ton nom et email ici
 */
 package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-// startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Start the uptime monitoring daemon",
+	Long: `Starts the background daemon that periodically checks configured HTTP endpoints,
+collects uptime/latency metrics, and triggers alerts if needed.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+The daemon runs indefinitely until stopped (Ctrl+C or SIGTERM).
+Configuration is loaded from a YAML file (default: config.yaml in current dir).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("start called")
+		configFile, _ := cmd.Flags().GetString("config")
+		if configFile != "" {
+			viper.SetConfigFile(configFile)
+		} else {
+			viper.SetConfigName("config")
+			viper.SetConfigType("yaml")
+			viper.AddConfigPath(".")
+			viper.AddConfigPath("$HOME/.uptimego")
+		}
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading config: %v\n", err)
+			os.Exit(1)
+		}
+
+		port := viper.GetInt("port")
+		endpoints := viper.Get("endpoints")
+		fmt.Printf("Daemon starting...\n")
+		fmt.Printf("Listening on port: %d\n", port)
+		fmt.Printf("Endpoints loaded: %v\n", endpoints)
+		fmt.Println("Monitoring started. Press Ctrl+C to stop.")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(startCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	startCmd.Flags().StringP("config", "c", "", "path to config file (default: config.yaml)")
 }
