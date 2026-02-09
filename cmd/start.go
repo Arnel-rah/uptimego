@@ -1,12 +1,11 @@
-/*
-Copyright © 2026 raharinandrasana <ton@email.com>  // ← Mets ton nom et email ici
-*/
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"time"
 
+	checker "github.com/Arnel-Rah/uptimego/internal"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -18,7 +17,7 @@ var startCmd = &cobra.Command{
 collects uptime/latency metrics, and triggers alerts if needed.
 
 The daemon runs indefinitely until stopped (Ctrl+C or SIGTERM).
-Configuration is loaded from a YAML file (default: config.yamlin current dir).`,
+Configuration is loaded from a YAML file (default: config.yaml in current dir).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		configFile, _ := cmd.Flags().GetString("config")
 		if configFile != "" {
@@ -29,17 +28,52 @@ Configuration is loaded from a YAML file (default: config.yamlin current dir).`,
 			viper.AddConfigPath(".")
 			viper.AddConfigPath("$HOME/.uptimego")
 		}
+
 		if err := viper.ReadInConfig(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading config: %v\n", err)
+			_, err := fmt.Fprintf(os.Stderr, "Error reading config: %v\n", err)
+			if err != nil {
+				return
+			}
 			os.Exit(1)
 		}
 
-		port := viper.GetInt("port")
-		endpoints := viper.Get("endpoints")
 		fmt.Printf("Daemon starting...\n")
-		fmt.Printf("Listening on port: %d\n", port)
-		fmt.Printf("Endpoints loaded: %v\n", endpoints)
+		fmt.Printf("Listening on port: %d\n", viper.GetInt("port"))
+
+		rawEndpoints := viper.Get("endpoints")
+		if rawEndpoints == nil {
+			fmt.Println("Aucun endpoint configuré")
+		} else {
+			endpoints, ok := rawEndpoints.([]interface{})
+			if !ok {
+				fmt.Fprintf(os.Stderr, "Erreur: 'endpoints' n'est pas une liste (type trouvé: %T)\n", rawEndpoints)
+				os.Exit(1)
+			}
+
+			for _, ep := range endpoints {
+				endpoint, ok := ep.(map[string]interface{})
+				if !ok {
+					fmt.Println("Endpoint invalide, saut...")
+					continue
+				}
+
+				name, _ := endpoint["name"].(string)
+				url, _ := endpoint["url"].(string)
+				timeoutStr, _ := endpoint["timeout"].(string)
+				timeout, err := time.ParseDuration(timeoutStr)
+				if err != nil {
+					fmt.Printf("Timeout invalide pour %s: %v\n", name, err)
+					continue
+				}
+
+				result := checker.CheckEndpoint(url, timeout)
+				fmt.Println(checker.FormatResult(name, url, result))
+			}
+		}
+
+		fmt.Println("Initial checks done. Monitoring loop coming soon...")
 		fmt.Println("Monitoring started. Press Ctrl+C to stop.")
+		select {}
 	},
 }
 
