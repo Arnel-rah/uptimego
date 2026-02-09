@@ -18,7 +18,7 @@ var startCmd = &cobra.Command{
 collects uptime/latency metrics, and triggers alerts if needed.
 
 The daemon runs indefinitely until stopped (Ctrl+C or SIGTERM).
-Configuration is loaded from a YAML file (default: config.yaml in current dir).`,
+Configuration is loaded from a YAML file (default: config.yamlin current dir).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		configFile, _ := cmd.Flags().GetString("config")
 		if configFile != "" {
