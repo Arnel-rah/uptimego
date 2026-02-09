@@ -73,7 +73,41 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 
 		fmt.Println("Initial checks done. Monitoring loop coming soon...")
 		fmt.Println("Monitoring started. Press Ctrl+C to stop.")
-		select {}
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		ticker = time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println("--- New check cycle ---")
+				endpoints, _ := rawEndpoints.([]interface{})
+				for _, ep := range endpoints {
+					endpoint, ok := ep.(map[string]interface{})
+					if !ok {
+						fmt.Println("Endpoint invalide, saut...")
+						continue
+					}
+
+					name, _ := endpoint["name"].(string)
+					url, _ := endpoint["url"].(string)
+					timeoutStr, _ := endpoint["timeout"].(string)
+					timeout, err := time.ParseDuration(timeoutStr)
+					if err != nil {
+						fmt.Printf("Timeout invalide pour %s: %v\n", name, err)
+						continue
+					}
+
+					result := checker.CheckEndpoint(url, timeout)
+					fmt.Println(checker.FormatResult(name, url, result))
+				}
+
+			case <-cmd.Context().Done():
+				return
+			}
+		}
 	},
 }
 
