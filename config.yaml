@@ -36,3 +36,9 @@ endpoints:
     interval: 30s
     timeout: 5s
     down_threshold: 3
+
+  - name: "Test Retry EOF"
+    url: "https://httpstat.us/200"
+    interval: 15s
+    timeout: 3s
+    down_threshold: 3
