@@ -3,7 +3,6 @@ package checker
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 )
@@ -20,7 +19,7 @@ func CheckEndpoint(url string, timeout time.Duration) CheckResult {
 
 func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 	const maxRetries = 3
-	const retryDelay = 2 * time.Second
+	const baseRetryDelay = 2 * time.Second
 
 	var lastErr error
 	var lastLatency time.Duration
@@ -35,14 +34,14 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
+			fmt.Printf("Échec tentative %d/%d pour %s : %v\n", attempt, maxRetries, url, err)
 			lastErr = err
 			if attempt < maxRetries {
-				time.Sleep(retryDelay)
+				time.Sleep(baseRetryDelay * time.Duration(attempt))
 				continue
 			}
-			return CheckResult{Up: false, Latency: 0, Error: lastErr}
+			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
 		}
-		fmt.Printf("Échec tentative %d/%d pour %s : %v\n", attempt, maxRetries, url, err)
 
 		client := &http.Client{
 			Timeout: timeout,
@@ -52,24 +51,29 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 		latency := time.Since(start)
 
 		if err != nil {
+			fmt.Printf("Échec tentative %d/%d pour %s : %v\n", attempt, maxRetries, url, err)
 			lastErr = err
 			lastLatency = latency
 			if attempt < maxRetries {
-				time.Sleep(retryDelay)
+				time.Sleep(baseRetryDelay * time.Duration(attempt))
 				continue
 			}
 			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
 		}
 
-		defer func(Body io.ReadCloser) {
-			if err := Body.Close(); err != nil {
+		if resp.StatusCode == 404 {
+			fmt.Printf("404 Not Found pour %s - pas de retry\n", url)
+			return CheckResult{Up: false, Latency: latency, Error: fmt.Errorf("404 Not Found - no retry")}
+		}
+
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
 				fmt.Printf("Error closing response body: %v\n", err)
 			}
-		}(resp.Body)
+		}()
 
 		up := resp.StatusCode >= 200 && resp.StatusCode < 400
-
-		fmt.Printf("Succès à la tentative %d/%d pour %s en %d ms\n", attempt, maxRetries, url, latency.Milliseconds())
+		fmt.Printf("Succès à la tentative %d/%d pour %s en %d ms (status %d)\n", attempt, maxRetries, url, latency.Milliseconds(), resp.StatusCode)
 
 		return CheckResult{
 			Up:      up,
@@ -80,10 +84,9 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 
 	return CheckResult{
 		Up:      false,
-		Latency: 0,
-		Error:   fmt.Errorf("all %d retries failed", maxRetries),
+		Latency: lastLatency,
+		Error:   lastErr,
 	}
-
 }
 
 func FormatResult(name, url string, result CheckResult) string {
