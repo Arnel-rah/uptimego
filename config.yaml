@@ -1,20 +1,32 @@
 port: 8080
 
 endpoints:
-  - name: "Google"
+  - name: "Google (stable)"
     url: "https://www.google.com"
     interval: 30s
     timeout: 5s
     down_threshold: 3
 
-  - name: "My Test API"
+  - name: "HTTPStat 200 (normal)"
     url: "https://httpstat.us/200"
     interval: 60s
-    timeout: 10s
+    timeout: 5s
     down_threshold: 2
 
-  - name : "Movie finder app"
-    url: "https://movie-finder-app-tau.vercel.app"
+  - name: "HTTPStat lent (timeout probable)"
+    url: "https://httpstat.us/200?sleep=8000"
     interval: 60s
+    timeout: 5s
+    down_threshold: 3
+
+  - name: "HTTPStat 500 (erreur serveur - retry utile)"
+    url: "https://httpstat.us/500"
+    interval: 90s
+    timeout: 5s
+    down_threshold: 3
+
+  - name: "Movie finder app"
+    url: "https://movie-finder-app-tau.vercel.app"
+    interval: 120s
     timeout: 10s
     down_threshold: 3
