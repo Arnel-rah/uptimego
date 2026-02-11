@@ -3,6 +3,7 @@ package checker
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -14,34 +15,71 @@ type CheckResult struct {
 }
 
 func CheckEndpoint(url string, timeout time.Duration) CheckResult {
-	start := time.Now()
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	return CheckWithRetry(url, timeout)
+}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return CheckResult{Up: false, Latency: 0, Error: err}
+func CheckWithRetry(url string, timeout time.Duration) CheckResult {
+	const maxRetries = 3
+	const retryDelay = 2 * time.Second
+
+	var lastErr error
+	var lastLatency time.Duration
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		start := time.Now()
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			lastErr = err
+			if attempt < maxRetries {
+				time.Sleep(retryDelay)
+				continue
+			}
+			return CheckResult{Up: false, Latency: 0, Error: lastErr}
+		}
+
+		client := &http.Client{
+			Timeout: timeout,
+		}
+
+		resp, err := client.Do(req)
+		latency := time.Since(start)
+
+		if err != nil {
+			lastErr = err
+			lastLatency = latency
+			if attempt < maxRetries {
+				time.Sleep(retryDelay)
+				continue
+			}
+			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
+		}
+
+		defer func(Body io.ReadCloser) {
+			if err := Body.Close(); err != nil {
+				fmt.Printf("Error closing response body: %v\n", err)
+			}
+		}(resp.Body)
+
+		up := resp.StatusCode >= 200 && resp.StatusCode < 400
+
+		return CheckResult{
+			Up:      up,
+			Latency: latency,
+			Error:   nil,
+		}
 	}
-
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
-	resp, err := client.Do(req)
-	latency := time.Since(start)
-
-	if err != nil {
-		return CheckResult{Up: false, Latency: latency, Error: err}
-	}
-	defer resp.Body.Close()
-	up := resp.StatusCode >= 200 && resp.StatusCode < 400
 
 	return CheckResult{
-		Up:      up,
-		Latency: latency,
-		Error:   nil,
+		Up:      false,
+		Latency: 0,
+		Error:   fmt.Errorf("all %d retries failed", maxRetries),
 	}
 }
+
 func FormatResult(name, url string, result CheckResult) string {
 	if result.Error != nil {
 		return fmt.Sprintf("%s (%s) → DOWN (%v)", name, url, result.Error)
