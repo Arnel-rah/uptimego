@@ -92,6 +92,7 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 				fmt.Printf("--- Cycle %d (%s) ---\n", cycleCount, time.Now().Format("15:04:05"))
 
 				var wg sync.WaitGroup
+
 				for _, ep := range endpoints {
 					endpoint, ok := ep.(map[string]interface{})
 					if !ok {
@@ -116,6 +117,7 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 						}(endpoint)
 					}
 				}
+
 				wg.Wait()
 
 			case <-cmd.Context().Done():
