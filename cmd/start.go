@@ -50,8 +50,8 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 			fmt.Println("Aucun endpoint configuré")
 		}
 
-		// checker  endpoint
-		checkEndpoint := func(endpoint map[string]interface{}) {
+		// Fonction réutilisable pour checker et logger un endpoint
+		checkAndLogEndpoint := func(endpoint map[string]interface{}) {
 			name, _ := endpoint["name"].(string)
 			url, _ := endpoint["url"].(string)
 			timeoutStr, _ := endpoint["timeout"].(string)
@@ -74,11 +74,12 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 				fmt.Println("Endpoint invalide, saut...")
 				continue
 			}
-			checkEndpoint(endpoint)
+			checkAndLogEndpoint(endpoint)
 		}
 
 		fmt.Println("Initial checks done. Monitoring loop starting...")
 		fmt.Println("Monitoring started. Press Ctrl+C to stop.")
+
 		globalTickInterval := 15 * time.Second
 		ticker := time.NewTicker(globalTickInterval)
 		defer ticker.Stop()
@@ -105,8 +106,9 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 						fmt.Printf("Interval invalide pour %s: %v\n", name, err)
 						continue
 					}
+
 					if interval > 0 && cycleCount%int(interval/globalTickInterval) == 0 {
-						checkEndpoint(endpoint)
+						checkAndLogEndpoint(endpoint)
 					}
 				}
 
