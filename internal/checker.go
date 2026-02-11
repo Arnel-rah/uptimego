@@ -42,6 +42,7 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 			}
 			return CheckResult{Up: false, Latency: 0, Error: lastErr}
 		}
+		fmt.Printf("Échec tentative %d/%d pour %s : %v\n", attempt, maxRetries, url, err)
 
 		client := &http.Client{
 			Timeout: timeout,
