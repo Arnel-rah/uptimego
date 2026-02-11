@@ -50,5 +50,5 @@ func FormatResult(name, url string, result CheckResult) string {
 	if !result.Up {
 		status = "DOWN"
 	}
-	return fmt.Sprintf("%s (%s) → %s (%.0f ms)", name, url, status, result.Latency.Milliseconds())
+	return fmt.Sprintf("%s (%s) → %s (%d ms)", name, url, status, result.Latency.Milliseconds())
 }
