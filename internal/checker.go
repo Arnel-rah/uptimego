@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -59,6 +60,11 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 				continue
 			}
 			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
+		}
+
+		if strings.Contains(err.Error(), "EOF") && attempt == 1 {
+			time.Sleep(500 * time.Millisecond)
+			continue
 		}
 
 		if resp.StatusCode >= 400 && resp.StatusCode != 500 {
