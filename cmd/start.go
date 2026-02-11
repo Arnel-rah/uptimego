@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	checker "github.com/Arnel-Rah/uptimego/internal"
@@ -90,6 +91,7 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 				cycleCount++
 				fmt.Printf("--- Cycle %d (%s) ---\n", cycleCount, time.Now().Format("15:04:05"))
 
+				var wg sync.WaitGroup
 				for _, ep := range endpoints {
 					endpoint, ok := ep.(map[string]interface{})
 					if !ok {
@@ -107,9 +109,14 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 
 					expectedTicks := int(interval / globalTickInterval)
 					if expectedTicks > 0 && cycleCount%expectedTicks == 0 {
-						checkAndLogEndpoint(endpoint)
+						wg.Add(1)
+						go func(ep map[string]interface{}) {
+							defer wg.Done()
+							checkAndLogEndpoint(ep)
+						}(endpoint)
 					}
 				}
+				wg.Wait()
 
 			case <-cmd.Context().Done():
 				fmt.Println("Daemon stopped gracefully")
