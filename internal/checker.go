@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -54,6 +55,10 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 			fmt.Printf("Échec tentative %d/%d pour %s : %v\n", attempt, maxRetries, url, err)
 			lastErr = err
 			lastLatency = latency
+			if strings.Contains(err.Error(), "EOF") && attempt == 1 {
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
 			if attempt < maxRetries {
 				time.Sleep(baseRetryDelay * time.Duration(attempt))
 				continue
