@@ -50,7 +50,6 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 			fmt.Println("Aucun endpoint configuré")
 		}
 
-		// Fonction réutilisable pour checker et logger un endpoint
 		checkAndLogEndpoint := func(endpoint map[string]interface{}) {
 			name, _ := endpoint["name"].(string)
 			url, _ := endpoint["url"].(string)
@@ -66,7 +65,6 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 			fmt.Println(checker.FormatResult(name, url, result))
 		}
 
-		// Checks initiaux
 		fmt.Println("--- Initial checks ---")
 		for _, ep := range endpoints {
 			endpoint, ok := ep.(map[string]interface{})
@@ -99,15 +97,16 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 						continue
 					}
 
+					name, _ := endpoint["name"].(string)
 					intervalStr, _ := endpoint["interval"].(string)
 					interval, err := time.ParseDuration(intervalStr)
 					if err != nil {
-						name, _ := endpoint["name"].(string)
 						fmt.Printf("Interval invalide pour %s: %v\n", name, err)
 						continue
 					}
 
-					if interval > 0 && cycleCount%int(interval/globalTickInterval) == 0 {
+					expectedTicks := int(interval / globalTickInterval)
+					if expectedTicks > 0 && cycleCount%expectedTicks == 0 {
 						checkAndLogEndpoint(endpoint)
 					}
 				}
