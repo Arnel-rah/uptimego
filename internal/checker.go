@@ -60,7 +60,7 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 				continue
 			}
 			if attempt < maxRetries {
-				time.Sleep(baseRetryDelay * time.Duration(attempt))
+				time.Sleep(baseRetryDelay * time.Duration(1<<uint(attempt-1)))
 				continue
 			}
 			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
