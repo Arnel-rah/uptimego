@@ -55,16 +55,15 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 			fmt.Printf("Échec tentative %d/%d pour %s : %v\n", attempt, maxRetries, url, err)
 			lastErr = err
 			lastLatency = latency
+			if strings.Contains(err.Error(), "EOF") && attempt == 1 {
+				time.Sleep(500 * time.Millisecond)
+				continue
+			}
 			if attempt < maxRetries {
 				time.Sleep(baseRetryDelay * time.Duration(attempt))
 				continue
 			}
 			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
-		}
-
-		if strings.Contains(err.Error(), "EOF") && attempt == 1 {
-			time.Sleep(500 * time.Millisecond)
-			continue
 		}
 
 		if resp.StatusCode >= 400 && resp.StatusCode != 500 {
