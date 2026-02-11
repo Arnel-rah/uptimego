@@ -61,9 +61,8 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 			return CheckResult{Up: false, Latency: lastLatency, Error: lastErr}
 		}
 
-		if resp.StatusCode == 404 {
-			fmt.Printf("404 Not Found pour %s - pas de retry\n", url)
-			return CheckResult{Up: false, Latency: latency, Error: fmt.Errorf("404 Not Found - no retry")}
+		if resp.StatusCode >= 400 && resp.StatusCode != 500 {
+			return CheckResult{Up: false, Latency: latency, Error: fmt.Errorf("status %d - no retry", resp.StatusCode)}
 		}
 
 		defer func() {
