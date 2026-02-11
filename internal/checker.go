@@ -26,6 +26,8 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 	var lastLatency time.Duration
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Printf("Tentative %d/%d pour %s...\n", attempt, maxRetries, url)
+
 		start := time.Now()
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -66,6 +68,8 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 
 		up := resp.StatusCode >= 200 && resp.StatusCode < 400
 
+		fmt.Printf("Succès à la tentative %d/%d pour %s en %d ms\n", attempt, maxRetries, url, latency.Milliseconds())
+
 		return CheckResult{
 			Up:      up,
 			Latency: latency,
@@ -78,6 +82,7 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 		Latency: 0,
 		Error:   fmt.Errorf("all %d retries failed", maxRetries),
 	}
+
 }
 
 func FormatResult(name, url string, result CheckResult) string {
