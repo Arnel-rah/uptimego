@@ -89,7 +89,7 @@ func CheckWithRetry(url string, timeout time.Duration) CheckResult {
 	return CheckResult{
 		Up:      false,
 		Latency: lastLatency,
-		Error:   lastErr,
+		Error:   fmt.Errorf("abandon après %d tentatives : %v", maxRetries, lastErr),
 	}
 }
 
