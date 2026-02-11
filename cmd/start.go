@@ -30,34 +30,27 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 		}
 
 		if err := viper.ReadInConfig(); err != nil {
-			_, err := fmt.Fprintf(os.Stderr, "Error reading config: %v\n", err)
-			if err != nil {
-				return
-			}
+			fmt.Fprintf(os.Stderr, "Error reading config: %v\n", err)
 			os.Exit(1)
 		}
 
 		fmt.Printf("Daemon starting...\n")
 		fmt.Printf("Listening on port: %d\n", viper.GetInt("port"))
 
-		// Chargement unique des endpoints
 		rawEndpoints := viper.Get("endpoints")
 		var endpoints []interface{}
 		if rawEndpoints != nil {
 			var ok bool
 			endpoints, ok = rawEndpoints.([]interface{})
 			if !ok {
-				_, err := fmt.Fprintf(os.Stderr, "Erreur: 'endpoints' n'est pas une liste (type trouvé: %T)\n", rawEndpoints)
-				if err != nil {
-					return
-				}
+				fmt.Fprintf(os.Stderr, "Erreur: 'endpoints' n'est pas une liste (type trouvé: %T)\n", rawEndpoints)
 				os.Exit(1)
 			}
 		} else {
 			fmt.Println("Aucun endpoint configuré")
 		}
 
-		// Fonction réutilisable pour checker un endpoint
+		// checker  endpoint
 		checkEndpoint := func(endpoint map[string]interface{}) {
 			name, _ := endpoint["name"].(string)
 			url, _ := endpoint["url"].(string)
@@ -86,22 +79,35 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 
 		fmt.Println("Initial checks done. Monitoring loop starting...")
 		fmt.Println("Monitoring started. Press Ctrl+C to stop.")
-
-		// Boucle périodique
-		ticker := time.NewTicker(30 * time.Second)
+		globalTickInterval := 15 * time.Second
+		ticker := time.NewTicker(globalTickInterval)
 		defer ticker.Stop()
+
+		cycleCount := 0
 
 		for {
 			select {
 			case <-ticker.C:
-				fmt.Println("--- New check cycle ---")
+				cycleCount++
+				fmt.Printf("--- Cycle %d (%s) ---\n", cycleCount, time.Now().Format("15:04:05"))
+
 				for _, ep := range endpoints {
 					endpoint, ok := ep.(map[string]interface{})
 					if !ok {
 						fmt.Println("Endpoint invalide, saut...")
 						continue
 					}
-					checkEndpoint(endpoint)
+
+					intervalStr, _ := endpoint["interval"].(string)
+					interval, err := time.ParseDuration(intervalStr)
+					if err != nil {
+						name, _ := endpoint["name"].(string)
+						fmt.Printf("Interval invalide pour %s: %v\n", name, err)
+						continue
+					}
+					if interval > 0 && cycleCount%int(interval/globalTickInterval) == 0 {
+						checkEndpoint(endpoint)
+					}
 				}
 
 			case <-cmd.Context().Done():

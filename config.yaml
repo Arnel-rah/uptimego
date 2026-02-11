@@ -12,3 +12,9 @@ endpoints:
     interval: 60s
     timeout: 10s
     down_threshold: 2
+
+  - name : "Movie finder app"
+    url: "https://movie-finder-app-tau.vercel.app"
+    interval: 60s
+    timeout: 10s
+    down_threshold: 3
