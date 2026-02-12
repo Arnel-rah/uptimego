@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	checker "github.com/Arnel-Rah/uptimego/internal"
@@ -79,6 +82,13 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 		fmt.Println("Initial checks done. Monitoring loop starting...")
 		fmt.Println("Monitoring started. Press Ctrl+C to stop.")
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Stop(sigChan)
+
 		globalTickInterval := 15 * time.Second
 		ticker := time.NewTicker(globalTickInterval)
 		defer ticker.Stop()
@@ -120,8 +130,13 @@ Configuration is loaded from a YAML file (default: config.yaml in current dir).`
 
 				wg.Wait()
 
-			case <-cmd.Context().Done():
+			case <-ctx.Done():
 				fmt.Println("Daemon stopped gracefully")
+				return
+
+			case sig := <-sigChan:
+				fmt.Printf("Signal reçu : %v - Arrêt du daemon...\n", sig)
+				cancel()
 				return
 			}
 		}
