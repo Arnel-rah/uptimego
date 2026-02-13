@@ -147,3 +147,5 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 	startCmd.Flags().StringP("config", "c", "", "path to config file (default: config.yaml)")
 }
+
+// Improve status output formatting
